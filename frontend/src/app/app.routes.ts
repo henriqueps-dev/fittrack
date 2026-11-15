@@ -7,6 +7,8 @@ export const routes: Routes = [
     canMatch: [guestGuard],
     loadComponent: () => import('./features/auth/auth-layout.component').then((m) => m.AuthLayoutComponent),
     children: [
+      // sem login, a raiz do site abre direto o formulario de entrada
+      { path: '', pathMatch: 'full', redirectTo: 'entrar' },
       { path: 'entrar', title: 'Entrar · FITTRACK', loadComponent: () => import('./features/auth/login.component').then((m) => m.LoginComponent) },
       { path: 'cadastro', title: 'Criar conta · FITTRACK', loadComponent: () => import('./features/auth/register.component').then((m) => m.RegisterComponent) },
       { path: 'recuperar-senha', title: 'Recuperar senha · FITTRACK', loadComponent: () => import('./features/auth/forgot-password.component').then((m) => m.ForgotPasswordComponent) },
