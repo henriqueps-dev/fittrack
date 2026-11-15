@@ -63,6 +63,8 @@ docker run -p 8080:8080 \
 
 ### Deploy no Render
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/henriqueps-dev/fittrack)
+
 O arquivo `render.yaml` descreve o serviço web (Docker) e o banco PostgreSQL.
 No painel do Render: **New → Blueprint**, selecione o repositório e confirme.
 O `JWT_SECRET` é gerado automaticamente.
