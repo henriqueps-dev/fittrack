@@ -1,0 +1,107 @@
+<div class="page" (click)="menuFor.set(null)">
+  <header class="page-head enter">
+    <div class="titles">
+      <span class="eyebrow">Seus treinos</span>
+      <h1>Treinos</h1>
+    </div>
+    <div class="head-actions">
+      <button type="button" class="btn ghost" (click)="splitOpen.set(true)"><lucide-icon [img]="icons.layers" [size]="18" /> Divisão pronta</button>
+      <a routerLink="/treinos/novo" class="btn primary"><lucide-icon [img]="icons.plus" [size]="18" /> Montar treino</a>
+    </div>
+  </header>
+
+  @if (loading()) {
+    @for (i of [1, 2, 3]; track i) { <div class="skeleton" style="height: 128px"></div> }
+  } @else if (workouts().length === 0) {
+    <div class="empty enter enter-1">
+      <lucide-icon [img]="icons.dumbbell" [size]="30" />
+      <h3>Nenhum treino ainda</h3>
+      <p>Monte um treino do zero escolhendo os exercícios, ou comece com uma divisão ABC, ABCD ou ABCDE e ajuste depois.</p>
+      <div class="empty-actions">
+        <a routerLink="/treinos/novo" class="btn primary">Montar meu treino</a>
+        <button type="button" class="btn ghost" (click)="splitOpen.set(true)">Usar divisão pronta</button>
+      </div>
+    </div>
+  } @else {
+    <p class="faint hint enter enter-1">Arraste pela alça para mudar a ordem da sua divisão.</p>
+    <ul class="list-w" cdkDropList [cdkDropListData]="workouts()" (cdkDropListDropped)="drop($event)" role="list">
+      @for (w of workouts(); track w.id; let i = $index) {
+        <li class="w card enter" [style.animation-delay.ms]="40 * i" cdkDrag cdkDragLockAxis="y" [cdkDragData]="w">
+          <div class="w-main">
+            <button type="button" class="grip" cdkDragHandle aria-label="Arrastar para reordenar">
+              <lucide-icon [img]="icons.grip" [size]="18" />
+            </button>
+            <span class="letter-badge">{{ w.letter || i + 1 }}</span>
+            <div class="w-info">
+              <h2 class="w-name">{{ w.name }}</h2>
+              <div class="w-meta">
+                <span><lucide-icon [img]="icons.dumbbell" [size]="14" /> {{ w.exercises.length }} exercícios</span>
+                <span><lucide-icon [img]="icons.clock" [size]="14" /> ~{{ w.estimatedMinutes }} min</span>
+                @if (w.lastPerformedAt) { <span class="faint">Último: {{ relativeDay(w.lastPerformedAt) }}</span> }
+              </div>
+              <div class="w-tags">
+                @for (m of w.muscleGroups; track m) { <span class="tag">{{ m }}</span> }
+              </div>
+            </div>
+            <div class="menu-wrap">
+              <button type="button" class="icon-btn" (click)="toggleMenu(w.id, $event)" aria-label="Mais ações" [attr.aria-expanded]="menuFor() === w.id">
+                <lucide-icon [img]="icons.more" [size]="20" />
+              </button>
+              @if (menuFor() === w.id) {
+                <div class="menu" role="menu" (click)="$event.stopPropagation()">
+                  <a role="menuitem" [routerLink]="['/treinos', w.id, 'editar']"><lucide-icon [img]="icons.edit" [size]="16" /> Editar</a>
+                  <button role="menuitem" type="button" (click)="duplicate(w)"><lucide-icon [img]="icons.copy" [size]="16" /> Duplicar</button>
+                  <button role="menuitem" type="button" class="danger" (click)="askDelete(w)"><lucide-icon [img]="icons.trash" [size]="16" /> Excluir</button>
+                </div>
+              }
+            </div>
+          </div>
+          <ol class="w-exercises">
+            @for (e of w.exercises; track e.id) {
+              <li><span class="ex-name">{{ e.exercise.name }}</span><span class="num faint">{{ e.sets }}×{{ e.reps }}</span></li>
+            }
+          </ol>
+          <div class="w-actions">
+            <a [routerLink]="['/treinos', w.id, 'editar']" class="btn ghost sm"><lucide-icon [img]="icons.edit" [size]="16" /> Editar</a>
+            <button type="button" class="btn primary sm" (click)="start(w)" [disabled]="startingId() !== null">
+              <lucide-icon [img]="icons.play" [size]="16" /> {{ startingId() === w.id ? 'Preparando…' : 'Iniciar' }}
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+@if (confirmDelete(); as w) {
+  <div class="sheet-backdrop" (click)="confirmDelete.set(null)">
+    <div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="del-title" (click)="$event.stopPropagation()">
+      <h2 id="del-title">Excluir treino?</h2>
+      <p class="muted">"{{ w.name }}" será removido. O histórico de sessões já realizadas continua salvo.</p>
+      <div class="sheet-actions">
+        <button type="button" class="btn ghost" (click)="confirmDelete.set(null)">Cancelar</button>
+        <button type="button" class="btn danger" (click)="remove()" [disabled]="busy()">Excluir</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (splitOpen()) {
+  <div class="sheet-backdrop" (click)="splitOpen.set(false)">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="split-title" (click)="$event.stopPropagation()">
+      <h2 id="split-title">Divisão pronta</h2>
+      <p class="muted">Cria os treinos com exercícios sugeridos da biblioteca. Depois você edita cada um como quiser.</p>
+      <div class="splits">
+        @for (s of splits; track s.type) {
+          <button type="button" class="split" (click)="createSplit(s.type)" [disabled]="busy()">
+            <span class="split-head"><span class="split-type num">{{ s.type }}</span><span class="faint">{{ s.title }}</span></span>
+            <span class="split-days">
+              @for (d of s.days; track d; let i = $index) { <span><b class="num">{{ s.type[i] }}</b> {{ d }}</span> }
+            </span>
+          </button>
+        }
+      </div>
+      <button type="button" class="btn ghost block" (click)="splitOpen.set(false)">Cancelar</button>
+    </div>
+  </div>
+}

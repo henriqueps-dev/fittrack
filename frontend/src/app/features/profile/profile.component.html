@@ -1,0 +1,163 @@
+<div class="page">
+  <header class="page-head enter">
+    <div class="titles">
+      <span class="eyebrow">Sua conta</span>
+      <h1>Perfil</h1>
+    </div>
+  </header>
+
+  @if (user(); as u) {
+    <section class="card identity enter enter-1">
+      <div class="avatar-wrap">
+        <app-avatar [name]="u.name" [src]="u.avatar" [size]="88" />
+        <label class="avatar-btn" [class.busy]="uploading()" aria-label="Trocar foto">
+          <lucide-icon [img]="icons.camera" [size]="16" />
+          <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onAvatar($event)" [disabled]="uploading()" />
+        </label>
+      </div>
+      <div class="who">
+        <h2>{{ u.name }}</h2>
+        <span class="faint">{{ u.email }}</span>
+        <span class="faint small">Membro desde {{ memberSince() }}</span>
+        @if (u.avatar) { <button type="button" class="btn quiet sm rm" (click)="removeAvatar()"><lucide-icon [img]="icons.trash" [size]="14" /> Remover foto</button> }
+      </div>
+    </section>
+  }
+
+  <form class="layout" (ngSubmit)="save()" novalidate>
+    <section class="card form-card enter enter-2" aria-labelledby="pd-title">
+      <h2 id="pd-title" class="card-title">Dados pessoais</h2>
+      <div class="fields">
+        <div class="field span-2">
+          <label for="p-name">Nome</label>
+          <input id="p-name" class="input" [class.invalid]="errors()['name']" maxlength="80" autocomplete="name"
+                 [value]="form().name" (input)="set('name', $any($event.target).value)" />
+          @if (errors()['name']) { <span class="error">{{ errors()['name'] }}</span> }
+        </div>
+        <div class="field">
+          <label for="p-birth">Nascimento</label>
+          <input id="p-birth" type="date" class="input" [class.invalid]="errors()['birthDate']" autocomplete="bday"
+                 [value]="form().birthDate" (change)="set('birthDate', $any($event.target).value)" />
+          @if (errors()['birthDate']) { <span class="error">{{ errors()['birthDate'] }}</span> }
+        </div>
+        <div class="field">
+          <label for="p-h">Altura (cm)</label>
+          <input id="p-h" class="input num" inputmode="numeric" [class.invalid]="errors()['heightCm']" placeholder="175"
+                 [value]="form().heightCm ?? ''" (change)="set('heightCm', num($any($event.target).value))" />
+          @if (errors()['heightCm']) { <span class="error">{{ errors()['heightCm'] }}</span> }
+        </div>
+        <div class="field">
+          <label for="p-w">Peso (kg)</label>
+          <input id="p-w" class="input num" inputmode="decimal" [class.invalid]="errors()['weightKg']" placeholder="78,5"
+                 [value]="form().weightKg ?? ''" (change)="set('weightKg', num($any($event.target).value))" />
+          @if (errors()['weightKg']) { <span class="error">{{ errors()['weightKg'] }}</span> }
+        </div>
+        <div class="field">
+          <span class="flabel">IMC</span>
+          <span class="bmi num">{{ bmi() ? bmi()!.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '—' }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card form-card enter enter-3" aria-labelledby="tr-title">
+      <h2 id="tr-title" class="card-title">Treino</h2>
+      <div class="field">
+        <span class="flabel" id="goal-l">Objetivo</span>
+        <div class="choices" role="radiogroup" aria-labelledby="goal-l">
+          @for (g of goals; track g[0]) {
+            <button type="button" role="radio" class="chip" [class.on]="form().goal === g[0]" [attr.aria-checked]="form().goal === g[0]" (click)="set('goal', g[0])">{{ g[1] }}</button>
+          }
+        </div>
+      </div>
+      <div class="field">
+        <span class="flabel" id="lvl-l">Experiência</span>
+        <div class="segmented" role="radiogroup" aria-labelledby="lvl-l">
+          @for (l of levels; track l[0]) {
+            <button type="button" role="radio" [class.on]="form().experienceLevel === l[0]" [attr.aria-checked]="form().experienceLevel === l[0]" (click)="set('experienceLevel', l[0])">{{ l[1] }}</button>
+          }
+        </div>
+      </div>
+      <div class="field">
+        <span class="flabel" id="wg-l">Meta semanal: <strong class="num accent">{{ form().weeklyGoal }} treino{{ form().weeklyGoal === 1 ? '' : 's' }}</strong></span>
+        <div class="week-goal" role="radiogroup" aria-labelledby="wg-l">
+          @for (n of [1, 2, 3, 4, 5, 6, 7]; track n) {
+            <button type="button" role="radio" class="wg num" [class.on]="n <= form().weeklyGoal" [attr.aria-checked]="form().weeklyGoal === n"
+                    [attr.aria-label]="n + ' por semana'" (click)="set('weeklyGoal', n)">{{ n }}</button>
+          }
+        </div>
+      </div>
+      <div class="field">
+        <label for="p-rest">Descanso padrão entre séries</label>
+        <select id="p-rest" class="select" (change)="set('defaultRestSeconds', +$any($event.target).value)">
+          @for (r of rests; track r) { <option [value]="r" [selected]="r === form().defaultRestSeconds">{{ r < 60 ? r + ' s' : (r / 60).toLocaleString('pt-BR') + ' min' }}</option> }
+        </select>
+      </div>
+    </section>
+
+    @if (dirty()) {
+      <div class="save-bar">
+        <span class="muted">Alterações não salvas</span>
+        <button type="button" class="btn ghost sm" (click)="reset()">Descartar</button>
+        <button type="submit" class="btn primary sm" [disabled]="saving()">{{ saving() ? 'Salvando…' : 'Salvar' }}</button>
+      </div>
+    }
+  </form>
+
+  <section class="card settings enter enter-4" aria-label="Configurações">
+    <button type="button" class="set-row" (click)="pwdOpen.set(true)">
+      <lucide-icon [img]="icons.key" [size]="20" /><span class="grow"><span class="title">Alterar senha</span></span>
+    </button>
+    <button type="button" class="set-row" (click)="notifications()" [disabled]="timer.notificationsEnabled()">
+      <lucide-icon [img]="icons.bell" [size]="20" />
+      <span class="grow"><span class="title">Aviso de fim do descanso</span><span class="sub">{{ timer.notificationsEnabled() ? 'Ativado' : 'Notificação quando o cronômetro zerar' }}</span></span>
+      @if (timer.notificationsEnabled()) { <span class="tag green">Ativo</span> }
+    </button>
+    @if (pwa.canInstall()) {
+      <button type="button" class="set-row" (click)="install()">
+        <lucide-icon [img]="icons.download" [size]="20" /><span class="grow"><span class="title">Instalar o app</span><span class="sub">Acesso direto pela tela inicial, funciona offline</span></span>
+      </button>
+    }
+    <button type="button" class="set-row danger" (click)="confirmLogout.set(true)">
+      <lucide-icon [img]="icons.logout" [size]="20" /><span class="grow"><span class="title">Sair da conta</span></span>
+    </button>
+  </section>
+</div>
+
+@if (pwdOpen()) {
+  <div class="sheet-backdrop" (click)="pwdOpen.set(false)">
+    <form class="sheet" role="dialog" aria-modal="true" aria-labelledby="pw-t" (click)="$event.stopPropagation()" (ngSubmit)="changePassword()" novalidate>
+      <h2 id="pw-t">Alterar senha</h2>
+      <div class="field">
+        <label for="pw-c">Senha atual</label>
+        <input id="pw-c" type="password" class="input" autocomplete="current-password" [value]="pwd().current" (input)="setPwd('current', $any($event.target).value)" />
+      </div>
+      <div class="field">
+        <label for="pw-n">Nova senha</label>
+        <input id="pw-n" type="password" class="input" autocomplete="new-password" [value]="pwd().next" (input)="setPwd('next', $any($event.target).value)" />
+        <span class="hint">Mínimo de 8 caracteres.</span>
+      </div>
+      <div class="field">
+        <label for="pw-r">Confirmar nova senha</label>
+        <input id="pw-r" type="password" class="input" autocomplete="new-password" [value]="pwd().confirm" (input)="setPwd('confirm', $any($event.target).value)" />
+        @if (pwdError()) { <span class="error" role="alert">{{ pwdError() }}</span> }
+      </div>
+      <div class="sheet-actions">
+        <button type="button" class="btn ghost" (click)="pwdOpen.set(false)">Cancelar</button>
+        <button type="submit" class="btn primary" [disabled]="saving()">Alterar</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (confirmLogout()) {
+  <div class="sheet-backdrop" (click)="confirmLogout.set(false)">
+    <div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="lo-t" (click)="$event.stopPropagation()">
+      <h2 id="lo-t">Sair da conta?</h2>
+      <p class="muted">Treinos ainda não sincronizados neste aparelho serão perdidos.</p>
+      <div class="sheet-actions">
+        <button type="button" class="btn ghost" (click)="confirmLogout.set(false)">Cancelar</button>
+        <button type="button" class="btn danger" (click)="auth.logout()">Sair</button>
+      </div>
+    </div>
+  </div>
+}

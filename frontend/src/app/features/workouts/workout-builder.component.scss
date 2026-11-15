@@ -1,0 +1,126 @@
+.back {
+  display: inline-flex; align-items: center; gap: 6px; width: fit-content;
+  font-size: 0.85rem; color: var(--text-3); text-decoration: none;
+}
+.back:hover { color: var(--text); }
+
+.layout { display: grid; gap: 20px; align-items: start; }
+@media (min-width: 1024px) {
+  .layout { grid-template-columns: minmax(0, 1fr) 300px; }
+  .basics, .section { grid-column: 1; }
+  .summary { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: 32px; }
+}
+
+.basics { display: grid; gap: 16px; }
+@media (min-width: 640px) {
+  .basics { grid-template-columns: minmax(0, 1fr) auto; }
+  .desc-field { grid-column: 1 / -1; }
+}
+.label { font-size: 0.85rem; font-weight: 500; color: var(--text-2); }
+
+.letters { display: flex; gap: 4px; flex-wrap: wrap; }
+.letter {
+  width: 40px; height: 44px; border-radius: 10px; border: 1px solid var(--border-strong);
+  background: var(--bg-elev); color: var(--text-2);
+  font-family: var(--font-display); font-weight: 700; font-size: 1.05rem;
+  transition: background-color 140ms var(--ease-out), border-color 140ms, color 140ms;
+}
+.letter:hover { color: var(--text); border-color: var(--text-3); }
+.letter.on { background: var(--red); border-color: var(--red); color: var(--on-red); }
+
+.add-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 36px 16px;
+  border: 1.5px dashed var(--border-strong); border-radius: var(--r); background: transparent; color: var(--text);
+  transition: border-color 160ms var(--ease-out), background-color 160ms;
+}
+.add-empty lucide-icon { color: var(--red-text); }
+.add-empty:hover { border-color: var(--red-line); background: var(--red-soft); }
+
+.items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.item { display: flex; flex-direction: column; gap: 12px; padding: 12px 14px 14px 8px; }
+.item-head { display: flex; align-items: center; gap: 8px; }
+.grip {
+  flex: none; width: 28px; height: 40px; display: grid; place-items: center;
+  border: 0; background: none; color: var(--text-3); cursor: grab; touch-action: none; border-radius: 8px;
+}
+.grip:hover { color: var(--text); background: var(--surface-2); }
+.order {
+  flex: none; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--surface-3); font-size: 0.9rem; font-weight: 700;
+}
+.item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; }
+.item-name {
+  font-weight: 600; font-size: 1rem; color: var(--text); text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.item-name:hover { color: var(--red-text); }
+
+.params { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-left: 36px; }
+@media (max-width: 479px) {
+  .params { grid-template-columns: 1fr 1fr; margin-left: 0; padding-left: 8px; }
+  .params .param:last-child { grid-column: 1 / -1; }
+}
+.param { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.p-label { font-size: 0.75rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.param .select { height: 44px; }
+
+.stepper {
+  display: flex; align-items: stretch; height: 44px; border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--border-strong); background: var(--bg-elev);
+}
+.stepper button {
+  flex: none; width: 40px; border: 0; background: transparent; color: var(--text-2); display: grid; place-items: center;
+}
+.stepper button:hover { color: var(--text); background: var(--surface-2); }
+.stepper button:disabled { opacity: 0.35; pointer-events: none; }
+.stepper input {
+  flex: 1; min-width: 0; width: 100%; border: 0; background: transparent; color: var(--text); text-align: center;
+  font-size: 1.1rem; font-weight: 700;
+}
+.stepper input:focus { outline: none; background: var(--surface-2); }
+.notes { margin-left: 36px; width: calc(100% - 36px); height: 40px; font-size: 0.88rem; }
+@media (max-width: 479px) { .notes { margin-left: 8px; width: calc(100% - 8px); } }
+
+.cdk-drag-preview { box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6); border-color: var(--red-line); }
+.cdk-drag-placeholder { opacity: 0.25; }
+.cdk-drag-animating { transition: transform 220ms var(--ease-out); }
+.items.cdk-drop-list-dragging .item:not(.cdk-drag-placeholder) { transition: transform 220ms var(--ease-out); }
+
+.summary { display: flex; flex-direction: column; gap: 16px; }
+.sum-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.sum-stats .value { font-size: 1.6rem; }
+.w-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.sum-actions { display: flex; gap: 10px; }
+.sum-actions .btn { flex: 1; }
+@media (max-width: 1023px) {
+  .summary {
+    position: sticky; bottom: calc(var(--nav-h) + 12px + var(--safe-b)); z-index: 5;
+    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.5); border-color: var(--border-strong);
+  }
+}
+
+/* seletor da biblioteca */
+.picker-backdrop {
+  position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.7);
+  display: flex; justify-content: center; align-items: flex-end;
+  animation: fade 200ms var(--ease-out) both;
+}
+.picker {
+  width: 100%; max-width: 1120px; height: 94dvh; display: flex; flex-direction: column;
+  background: var(--bg); border: 1px solid var(--border-strong); border-bottom: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0; overflow: hidden;
+  animation: sheet-up 320ms var(--ease-out) both;
+}
+@media (min-width: 1024px) {
+  .picker-backdrop { align-items: center; padding: 24px; }
+  .picker { height: min(900px, 92dvh); border-radius: var(--r-lg); border-bottom: 1px solid var(--border-strong); animation-name: pop; }
+}
+.picker-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 16px 12px; border-bottom: 1px solid var(--border);
+}
+.picker-head h2 { font-size: 1.25rem; }
+.picker-head .faint { font-size: 0.85rem; }
+.picker-body { flex: 1; overflow: auto; padding: 16px; overscroll-behavior: contain; }
+.picker-foot { padding: 12px 16px calc(12px + var(--safe-b)); border-top: 1px solid var(--border); background: var(--surface); }
+@media (min-width: 1024px) { .picker-foot { display: flex; justify-content: flex-end; } .picker-foot .btn { width: auto; min-width: 200px; } }

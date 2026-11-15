@@ -1,0 +1,139 @@
+<div class="page">
+  <header class="page-head enter">
+    <div class="titles">
+      <span class="eyebrow">Seus números</span>
+      <h1>Evolução</h1>
+    </div>
+    <div class="segmented ranges" role="tablist" aria-label="Período">
+      @for (r of ranges; track r.code) {
+        <button type="button" role="tab" [class.on]="range() === r.code" [attr.aria-selected]="range() === r.code" (click)="range.set(r.code)">{{ r.label }}</button>
+      }
+    </div>
+  </header>
+
+  @if (overview(); as o) {
+    <section class="card kpis enter enter-1" aria-label="Resumo do período">
+      <div class="stat"><span class="value num">{{ o.sessions }}</span><span class="label">treinos</span></div>
+      <div class="stat"><span class="value num">{{ fmt.volume(o.volume) }}</span><span class="label">volume total</span></div>
+      <div class="stat"><span class="value num">{{ fmt.duration(o.durationSeconds) }}</span><span class="label">tempo treinando</span></div>
+      <div class="stat"><span class="value num">{{ o.sessionsPerWeek.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) }}</span><span class="label">treinos / semana</span></div>
+      <div class="stat"><span class="value num">{{ o.sets }}</span><span class="label">séries</span></div>
+      <div class="stat"><span class="value num">{{ fmt.volume(o.avgVolumePerSession) }}</span><span class="label">volume médio</span></div>
+    </section>
+
+    <div class="grid-2">
+      <section class="card chart-card enter enter-2" aria-labelledby="wk-title">
+        <div class="section-head">
+          <h2 id="wk-title">Por semana</h2>
+          <div class="segmented sm" role="tablist" aria-label="Métrica semanal">
+            <button type="button" role="tab" [class.on]="weeklyMode() === 'volume'" [attr.aria-selected]="weeklyMode() === 'volume'" (click)="weeklyMode.set('volume')">Volume</button>
+            <button type="button" role="tab" [class.on]="weeklyMode() === 'sessions'" [attr.aria-selected]="weeklyMode() === 'sessions'" (click)="weeklyMode.set('sessions')">Treinos</button>
+          </div>
+        </div>
+        @if (o.weekly.length) {
+          <app-chart type="bar" [labels]="weeklyLabels()" [data]="weeklyData()" [unit]="weeklyMode() === 'volume' ? 'kg' : 'treinos'"
+                     [height]="210" [ariaLabel]="'Gráfico semanal de ' + (weeklyMode() === 'volume' ? 'volume' : 'treinos')" />
+        } @else { <p class="faint empty-inline">Sem treinos neste período.</p> }
+      </section>
+
+      <section class="card enter enter-2" aria-labelledby="mu-title">
+        <div class="section-head">
+          <h2 id="mu-title">Séries por músculo</h2>
+          <span class="faint small num">{{ shareTotal() }} séries</span>
+        </div>
+        @if (o.muscleShare.length) {
+          <ul class="share">
+            @for (m of o.muscleShare; track m.slug; let i = $index) {
+              <li>
+                <span class="sh-name">{{ m.name }}</span>
+                <span class="sh-track"><span class="sh-fill" [class.top]="i === 0" [style.width.%]="(m.sets / shareMax()) * 100"></span></span>
+                <span class="sh-val num">{{ m.sets }}</span>
+              </li>
+            }
+          </ul>
+        } @else { <p class="faint empty-inline">Os músculos trabalhados aparecem aqui.</p> }
+      </section>
+    </div>
+  } @else if (loading()) {
+    <div class="skeleton" style="height: 140px"></div>
+    <div class="skeleton" style="height: 280px"></div>
+  }
+
+  <!-- progresso por exercicio -->
+  <section class="card ex-progress enter enter-3" aria-labelledby="ex-title">
+    <div class="section-head wrap">
+      <h2 id="ex-title"><lucide-icon [img]="icons.chart" [size]="18" /> Carga por exercício</h2>
+      @if (trained().length) {
+        <select class="select ex-select" aria-label="Exercício" [value]="exerciseId()" (change)="exerciseId.set(+$any($event.target).value)">
+          @for (t of trained(); track t.id) { <option [value]="t.id" [selected]="t.id === exerciseId()">{{ t.name }} ({{ t.sessions }}×)</option> }
+        </select>
+      }
+    </div>
+    @if (!trained().length) {
+      <div class="empty compact">
+        <lucide-icon [img]="icons.dumbbell" [size]="26" />
+        <p>Finalize treinos registrando as cargas para ver a evolução de cada exercício.</p>
+        <a routerLink="/treinos" class="btn primary sm">Meus treinos</a>
+      </div>
+    } @else if (progress(); as p) {
+      <div class="ex-kpis">
+        <div class="stat"><span class="value num">{{ fmt.kg(p.bestWeight) }}</span><span class="label">maior carga</span></div>
+        <div class="stat"><span class="value num">{{ fmt.kg(p.bestEstimated1Rm) }}</span><span class="label">1RM estimado</span></div>
+        <div class="stat"><span class="value num" [class.up]="p.weightChange > 0" [class.down]="p.weightChange < 0">{{ signed(p.weightChange) }}</span><span class="label">no período</span></div>
+      </div>
+      <div class="segmented sm metrics" role="tablist" aria-label="Métrica">
+        @for (m of metrics; track m.code) {
+          <button type="button" role="tab" [class.on]="metric() === m.code" [attr.aria-selected]="metric() === m.code" (click)="metric.set(m.code)">{{ m.label }}</button>
+        }
+      </div>
+      @if (p.points.length) {
+        <app-chart type="line" [labels]="progLabels()" [data]="progData()" [unit]="metricUnit()" [decimals]="1" [height]="230"
+                   [ariaLabel]="'Evolução de ' + p.exercise.name" />
+      } @else { <p class="faint empty-inline">Sem registros deste exercício no período.</p> }
+      <a class="faint small link" [routerLink]="['/exercicios', p.exercise.id]">Ver exercício →</a>
+    } @else {
+      <div class="skeleton" style="height: 260px"></div>
+    }
+  </section>
+
+  <div class="grid-2">
+    <section class="card enter enter-3" aria-labelledby="pr-title">
+      <div class="section-head"><h2 id="pr-title"><lucide-icon [img]="icons.trophy" [size]="18" /> Recordes</h2></div>
+      @if (bestRecords().length) {
+        <ul class="list prs">
+          @for (r of bestRecords(); track r.id) {
+            <li class="row">
+              <span class="grow">
+                <span class="title">{{ r.exercise.name }}</span>
+                <span class="sub">{{ fmt.kg(r.weightKg) }} × {{ r.reps }} · {{ fmt.relativeDay(r.achievedAt) }}</span>
+              </span>
+              <strong class="num pr-val">{{ fmt.kg(r.value) }}</strong>
+            </li>
+          }
+        </ul>
+      } @else { <p class="faint empty-inline">Seus recordes pessoais aparecem aqui automaticamente.</p> }
+    </section>
+
+    <section class="card enter enter-4" aria-labelledby="ach-title">
+      <div class="section-head">
+        <h2 id="ach-title">Conquistas</h2>
+        <span class="faint small num">{{ unlockedCount() }}/{{ achievements().length }}</span>
+      </div>
+      <ul class="ach">
+        @for (a of achievements(); track a.code) {
+          <li class="ach-item" [class.on]="a.unlocked" [title]="a.description">
+            <span class="ach-icon"><lucide-icon [img]="achIcon(a.icon)" [size]="20" /></span>
+            <span class="ach-text">
+              <span class="ach-title">{{ a.title }}</span>
+              <span class="ach-desc">{{ a.description }}</span>
+              @if (!a.unlocked) {
+                <span class="progress-track"><span class="progress-fill" [style.width.%]="a.progress * 100"></span></span>
+                <span class="ach-label num">{{ a.progressLabel }}</span>
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+</div>

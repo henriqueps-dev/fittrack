@@ -1,0 +1,226 @@
+@if (result(); as r) {
+  <!-- ---------------------------------------------------------------- resumo -->
+  <main class="done-screen">
+    <div class="done-inner enter">
+      <span class="done-badge"><lucide-icon [img]="icons.flag" [size]="28" /></span>
+      <span class="eyebrow">Treino concluído</span>
+      <h1>{{ r.session.workoutName }}</h1>
+      @if (r.queued) {
+        <p class="queued"><lucide-icon [img]="icons.offline" [size]="16" /> Salvo no aparelho. Será sincronizado quando a internet voltar.</p>
+      }
+
+      <div class="done-stats card">
+        <div class="stat"><span class="value num">{{ fmt.duration(r.session.durationSeconds) }}</span><span class="label">duração</span></div>
+        <div class="stat"><span class="value num">{{ fmt.volume(r.session.totalVolume) }}</span><span class="label">volume</span></div>
+        <div class="stat"><span class="value num">{{ r.session.completedSets }}</span><span class="label">séries</span></div>
+        <div class="stat"><span class="value num">{{ r.session.totalReps }}</span><span class="label">repetições</span></div>
+      </div>
+
+      @if (r.session.comparison; as c) {
+        <div class="compare card">
+          <span class="faint">Comparado ao último ({{ fmt.relativeDay(c.previousDate) }})</span>
+          <strong class="num" [class.up]="c.volumeDelta > 0" [class.down]="c.volumeDelta < 0">{{ delta(c.volumeDelta) }} de volume</strong>
+        </div>
+      }
+
+      @if (r.records.length) {
+        <section class="records">
+          <h2><lucide-icon [img]="icons.trophy" [size]="20" /> Novos recordes</h2>
+          <ul>
+            @for (rec of r.records; track rec.id; let i = $index) {
+              <li class="record enter" [style.animation-delay.ms]="120 + i * 70">
+                <div class="grow">
+                  <span class="title">{{ rec.exercise.name }}</span>
+                  <span class="sub">{{ recordLabel[rec.type] }}</span>
+                </div>
+                <strong class="num">{{ rec.type === 'MAX_REPS' ? rec.value + ' reps' : fmt.kg(rec.value) }}</strong>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      <div class="done-actions">
+        @if (r.session.id) { <a class="btn ghost" [routerLink]="['/historico', r.session.id]">Ver detalhes</a> }
+        <a class="btn primary" routerLink="/">Voltar ao início</a>
+      </div>
+    </div>
+  </main>
+} @else if (session(); as s) {
+  <div class="runner">
+    <!-- ------------------------------------------------------------ topo -->
+    <header class="top">
+      <a routerLink="/treinos" class="icon-btn" aria-label="Sair (o treino continua salvo)"><lucide-icon [img]="icons.back" [size]="22" /></a>
+      <div class="top-info">
+        <span class="w-name">{{ s.workoutName }}</span>
+        <span class="top-meta">
+          <span class="num elapsed" aria-label="Tempo de treino">{{ fmt.clock(elapsed()) }}</span>
+          <span class="dot" aria-hidden="true"></span>
+          <span class="save" [class.local]="store.saveState() === 'local'" aria-live="polite">
+            @switch (store.saveState()) {
+              @case ('saving') { Salvando… }
+              @case ('local') { <lucide-icon [img]="icons.offline" [size]="13" /> Salvo no aparelho }
+              @default { Salvo }
+            }
+          </span>
+        </span>
+      </div>
+      <button type="button" class="btn primary sm" (click)="confirmFinish.set(true)">Finalizar</button>
+    </header>
+    <div class="progress-track top-progress" role="progressbar" aria-label="Séries concluídas"
+         [attr.aria-valuenow]="store.progress().done" aria-valuemin="0" [attr.aria-valuemax]="store.progress().total">
+      <div class="progress-fill" [style.width.%]="store.progress().ratio * 100"></div>
+    </div>
+
+    <!-- ------------------------------------------------------ exercicios -->
+    <nav class="strip" aria-label="Exercícios do treino">
+      @for (e of s.exercises; track e.order; let i = $index) {
+        <button type="button" class="strip-item" [class.on]="i === cursor()" [class.complete]="!e.skipped && doneCount(e) === e.sets.length"
+                [class.skipped]="e.skipped" (click)="go(i)" [attr.aria-current]="i === cursor() ? 'step' : null">
+          <span class="si-num num">
+            @if (!e.skipped && doneCount(e) === e.sets.length) { <lucide-icon [img]="icons.check" [size]="14" /> } @else { {{ i + 1 }} }
+          </span>
+          <span class="si-name">{{ e.exercise.name }}</span>
+          <span class="si-count num">{{ doneCount(e) }}/{{ e.sets.length }}</span>
+        </button>
+      }
+    </nav>
+
+    @if (current(); as e) {
+      <main class="body">
+        <section class="ex-head">
+          <div class="anim card flush">
+            <app-exercise-animation [movement]="e.exercise.movement" [equipment]="e.exercise.equipment"
+                                    [muscle]="e.exercise.primaryMuscle.slug" [label]="'Demonstração: ' + e.exercise.name" />
+          </div>
+          <div class="ex-info">
+            <span class="eyebrow">Exercício {{ cursor() + 1 }} de {{ s.exercises.length }}</span>
+            <h1 class="ex-name"><a [routerLink]="['/exercicios', e.exercise.id]">{{ e.exercise.name }}</a></h1>
+            <div class="ex-tags">
+              <span class="tag red">{{ muscleLabel[e.exercise.primaryMuscle.slug] }}</span>
+              <span class="tag">{{ eqLabel[e.exercise.equipment] }}</span>
+              <span class="tag"><lucide-icon [img]="icons.timer" [size]="12" /> {{ e.restSeconds }}s descanso</span>
+            </div>
+            @if (e.previousDate) {
+              <p class="faint prev-note">Última vez: {{ fmt.relativeDay(e.previousDate) }}. Os pesos já vêm preenchidos.</p>
+            }
+          </div>
+        </section>
+
+        @if (e.skipped) {
+          <div class="skipped-box card">
+            <p>Você pulou este exercício. Ele não conta no volume do treino.</p>
+            <button type="button" class="btn ghost sm" (click)="toggleSkip(e)"><lucide-icon [img]="icons.undo" [size]="16" /> Voltar a fazer</button>
+          </div>
+        } @else {
+          <section class="sets card flush" aria-label="Séries">
+            <div class="sets-head" aria-hidden="true">
+              <span>Série</span><span>Anterior</span><span>Kg</span><span>Reps</span><span></span>
+            </div>
+            <ol class="set-list">
+              @for (x of e.sets; track $index; let i = $index) {
+                <li class="set" [class.done]="x.completed">
+                  <span class="set-n num">{{ i + 1 }}</span>
+                  <span class="set-prev num faint">{{ previousFor(e, i) }}</span>
+                  <div class="kg-cell">
+                    <button type="button" class="nudge" (click)="bump(e, i, -2.5)" [attr.aria-label]="'Menos 2,5 kg na série ' + (i + 1)"><lucide-icon [img]="icons.minus" [size]="14" /></button>
+                    <input class="cell num" inputmode="decimal" [value]="x.weightKg" (change)="setValue(e, i, 'weightKg', $any($event.target).value)"
+                           (focus)="$any($event.target).select()" [attr.aria-label]="'Peso em kg da série ' + (i + 1)" />
+                    <button type="button" class="nudge" (click)="bump(e, i, 2.5)" [attr.aria-label]="'Mais 2,5 kg na série ' + (i + 1)"><lucide-icon [img]="icons.plus" [size]="14" /></button>
+                  </div>
+                  <input class="cell num reps" inputmode="numeric" [value]="x.reps" (change)="setValue(e, i, 'reps', $any($event.target).value)"
+                         (focus)="$any($event.target).select()" [attr.aria-label]="'Repetições da série ' + (i + 1)" />
+                  <button type="button" class="check" [class.on]="x.completed" (click)="toggleSet(e, i)"
+                          [attr.aria-pressed]="x.completed" [attr.aria-label]="(x.completed ? 'Desmarcar' : 'Concluir') + ' série ' + (i + 1)">
+                    <lucide-icon [img]="icons.check" [size]="20" />
+                  </button>
+                </li>
+              }
+            </ol>
+            <div class="set-tools">
+              <button type="button" class="btn quiet sm" (click)="store.addSet(e.order)"><lucide-icon [img]="icons.plus" [size]="16" /> Série</button>
+              <button type="button" class="btn quiet sm" (click)="store.removeSet(e.order, e.sets.length - 1)" [disabled]="e.sets.length <= 1">
+                <lucide-icon [img]="icons.minus" [size]="16" /> Série
+              </button>
+              <span class="grow"></span>
+              <button type="button" class="btn quiet sm" (click)="toggleSkip(e)"><lucide-icon [img]="icons.skip" [size]="16" /> Pular</button>
+            </div>
+          </section>
+        }
+
+        <div class="pager">
+          <button type="button" class="btn ghost" (click)="go(cursor() - 1)" [disabled]="cursor() === 0">
+            <lucide-icon [img]="icons.prev" [size]="18" /> Anterior
+          </button>
+          <span class="faint num live">{{ fmt.volume(liveVolume()) }} levantados</span>
+          <button type="button" class="btn ghost" (click)="go(cursor() + 1)" [disabled]="cursor() >= s.exercises.length - 1">
+            Próximo <lucide-icon [img]="icons.next" [size]="18" />
+          </button>
+        </div>
+
+        <div class="notes-wrap">
+          <label for="s-notes" class="faint">Anotações do treino</label>
+          <textarea id="s-notes" class="textarea" rows="2" maxlength="500" placeholder="Como foi? Dor, energia, ajustes…"
+                    [value]="s.notes ?? ''" (change)="store.setNotes($any($event.target).value)"></textarea>
+          <button type="button" class="btn danger sm discard" (click)="confirmDiscard.set(true)"><lucide-icon [img]="icons.trash" [size]="16" /> Descartar treino</button>
+        </div>
+      </main>
+    }
+
+    <!-- -------------------------------------------------------- descanso -->
+    @if (timer.running()) {
+      <aside class="rest" role="timer" aria-live="off" aria-label="Descanso">
+        <div class="rest-ring" [style.--p]="timer.progress()">
+          <span class="num">{{ fmt.clock(timer.remaining()) }}</span>
+        </div>
+        <div class="rest-info">
+          <strong>Descanso</strong>
+          <span class="faint">{{ timer.remaining() === 0 ? 'Bora para a próxima!' : 'Respira e prepara a próxima série' }}</span>
+        </div>
+        <div class="rest-actions">
+          <button type="button" class="icon-btn boxed" (click)="timer.add(-15)" aria-label="Menos 15 segundos"><span class="num">−15</span></button>
+          <button type="button" class="icon-btn boxed" (click)="timer.add(15)" aria-label="Mais 15 segundos"><span class="num">+15</span></button>
+          @if (!timer.notificationsEnabled()) {
+            <button type="button" class="icon-btn boxed" (click)="enableNotifications()" aria-label="Avisar quando acabar"><lucide-icon [img]="icons.bell" [size]="18" /></button>
+          }
+          <button type="button" class="btn primary sm" (click)="timer.stop()">Pular</button>
+        </div>
+      </aside>
+    }
+  </div>
+
+  @if (confirmFinish()) {
+    <div class="sheet-backdrop" (click)="confirmFinish.set(false)">
+      <div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="fin-title" (click)="$event.stopPropagation()">
+        <h2 id="fin-title">Finalizar treino?</h2>
+        @if (pendingSets() > 0) {
+          <p class="muted">Ainda faltam <strong class="num">{{ pendingSets() }}</strong> série{{ pendingSets() === 1 ? '' : 's' }}. Só as séries marcadas entram no histórico.</p>
+        } @else {
+          <p class="muted">Todas as séries concluídas. Mandou bem!</p>
+        }
+        <div class="sheet-actions">
+          <button type="button" class="btn ghost" (click)="confirmFinish.set(false)">Continuar</button>
+          <button type="button" class="btn primary" (click)="finish()" [disabled]="busy() || store.progress().done === 0">
+            {{ busy() ? 'Salvando…' : 'Finalizar' }}
+          </button>
+        </div>
+        @if (store.progress().done === 0) { <p class="faint small">Conclua pelo menos uma série para finalizar.</p> }
+      </div>
+    </div>
+  }
+
+  @if (confirmDiscard()) {
+    <div class="sheet-backdrop" (click)="confirmDiscard.set(false)">
+      <div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="dis-title" (click)="$event.stopPropagation()">
+        <h2 id="dis-title">Descartar treino?</h2>
+        <p class="muted">Tudo o que foi registrado nesta sessão será apagado. Isso não pode ser desfeito.</p>
+        <div class="sheet-actions">
+          <button type="button" class="btn ghost" (click)="confirmDiscard.set(false)">Cancelar</button>
+          <button type="button" class="btn danger" (click)="discard()" [disabled]="busy()">Descartar</button>
+        </div>
+      </div>
+    </div>
+  }
+} @else {
+  <div class="page"><div class="skeleton" style="height: 60vh"></div></div>
+}

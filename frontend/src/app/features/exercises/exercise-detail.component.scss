@@ -1,0 +1,50 @@
+.topbar { display: flex; justify-content: space-between; }
+.fav.active { color: var(--red-text); border-color: var(--red-line); }
+.fav lucide-icon.filled ::ng-deep svg { fill: currentColor; }
+
+.layout { display: grid; gap: 16px; }
+@media (min-width: 1024px) {
+  .layout { grid-template-columns: 1.15fr 1fr; gap: 20px; align-items: start; }
+  .stage { grid-row: span 2; }
+}
+
+.stage {
+  position: relative; padding: 12px;
+  background:
+    radial-gradient(70% 60% at 50% 85%, rgba(225, 29, 46, 0.12), transparent 70%),
+    var(--bg-elev);
+  aspect-ratio: 240 / 196;
+}
+.stage app-exercise-animation { width: 100%; height: 100%; }
+.orbit-hint {
+  position: absolute; left: 14px; bottom: 10px; pointer-events: none;
+  font-size: 0.75rem; color: var(--text-3); letter-spacing: 0.02em;
+}
+.play { position: absolute; right: 10px; top: 10px; background: var(--surface-2); }
+
+.info { display: flex; flex-direction: column; gap: 14px; }
+.titles { display: flex; flex-direction: column; gap: 6px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.desc { color: var(--text-2); max-width: 60ch; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.how, .muscles, .history { display: flex; flex-direction: column; gap: 14px; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.steps li { display: flex; gap: 12px; align-items: flex-start; }
+.steps .n {
+  flex: none; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--red-soft); color: var(--red-text); font-size: 1rem;
+}
+
+.muscles app-muscle-map { max-width: 360px; align-self: center; width: 100%; }
+.legend { display: flex; justify-content: center; gap: 18px; font-size: 0.85rem; color: var(--text-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.sw.primary { background: var(--red); }
+.sw.secondary { background: rgba(225, 29, 46, 0.38); }
+
+.hist-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.hist-stats .value { font-size: 1.4rem; }
+.more { font-size: 0.85rem; }
+.more:hover { color: var(--text); }
+.small { font-size: 0.82rem; }

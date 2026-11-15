@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: fittrack-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-fittrack}
+      POSTGRES_USER: ${DB_USERNAME:-fittrack}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fittrack}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - fittrack-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-fittrack} -d ${DB_NAME:-fittrack}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  fittrack-data:

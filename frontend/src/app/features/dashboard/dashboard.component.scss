@@ -1,0 +1,80 @@
+.hello { display: flex; flex-direction: column; gap: 4px; }
+.hello h1 { font-size: clamp(2.4rem, 9vw, 3.4rem); }
+.dot { color: var(--red-text); }
+
+.next {
+  position: relative;
+  display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+  padding: 20px;
+  border-color: var(--border-strong);
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(225, 29, 46, 0.16), transparent 55%),
+    var(--surface);
+  overflow: hidden;
+}
+.next::after {
+  content: ''; position: absolute; left: 0; top: 20px; bottom: 20px; width: 3px; border-radius: 0 3px 3px 0; background: var(--red);
+}
+.next-top { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.next-name { font-size: clamp(1.8rem, 6vw, 2.4rem); }
+.next-meta { display: flex; gap: 16px; color: var(--text-2); font-size: 0.92rem; }
+.next-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.muscles { display: flex; flex-wrap: wrap; gap: 6px; }
+.next .btn { margin-top: 6px; }
+.next-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+
+.week { display: flex; flex-direction: column; gap: 16px; }
+.week-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.goal { margin-top: 6px; color: var(--text-2); }
+.goal .big { font-size: 2.6rem; color: var(--text); line-height: 1; }
+.goal .of { font-size: 1.3rem; color: var(--text-3); margin-right: 6px; }
+.streak { height: 26px; }
+
+.days {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+}
+.days li { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.days .d { font-size: 0.72rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.days .mark {
+  width: 100%; max-width: 40px; aspect-ratio: 1; border-radius: 10px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  transition: background-color 300ms var(--ease-out);
+}
+.days li.today .d { color: var(--text); font-weight: 600; }
+.days li.today .mark { border-color: var(--text-3); }
+.days li.done .mark { background: var(--red); border-color: var(--red); box-shadow: 0 0 18px rgba(225, 29, 46, 0.35); }
+
+.stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  padding-top: 14px; border-top: 1px solid var(--border);
+}
+.stats .value { font-size: 1.45rem; }
+
+.grid { display: grid; gap: 20px; }
+@media (min-width: 900px) { .grid { grid-template-columns: 1.4fr 1fr; } }
+
+.chart-card, .last { display: flex; flex-direction: column; gap: 14px; }
+.link-more { display: inline-flex; align-items: center; gap: 2px; color: var(--text-2); font-size: 0.85rem; }
+.link-more:hover { color: var(--text); }
+
+.last-link { display: flex; flex-direction: column; gap: 6px; padding: 12px; margin: -4px -12px 0; border-radius: var(--r-sm); transition: background-color 160ms var(--ease-out); }
+.last-link:hover { background: var(--surface-2); }
+.last-link h3 { font-size: 1.4rem; text-transform: uppercase; }
+.last-stats { display: flex; gap: 14px; color: var(--text-2); font-size: 0.9rem; }
+.last-stats .num { color: var(--text); font-size: 1.05rem; }
+.ex-names { font-size: 0.85rem; color: var(--text-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.total { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); color: var(--text-3); font-size: 0.85rem; }
+.total .num { color: var(--text); font-size: 1rem; }
+
+.build {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: var(--r);
+  border: 1px dashed var(--border-strong);
+  transition: border-color 160ms var(--ease-out), background-color 160ms;
+}
+.build:hover { border-color: var(--red-line); background: var(--surface); }
+.build-icon { width: 40px; height: 40px; border-radius: var(--r-sm); display: grid; place-items: center; background: var(--red-soft); color: var(--red-text); }
+.build .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.build .t { font-weight: 600; }
+.build .s { font-size: 0.85rem; color: var(--text-3); }

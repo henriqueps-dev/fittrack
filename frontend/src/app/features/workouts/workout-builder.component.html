@@ -1,0 +1,136 @@
+<div class="page">
+  <header class="page-head enter">
+    <div class="titles">
+      <a routerLink="/treinos" class="back"><lucide-icon [img]="icons.back" [size]="16" /> Treinos</a>
+      <h1>{{ isEdit() ? 'Editar treino' : 'Montar treino' }}</h1>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="skeleton" style="height: 180px"></div>
+    <div class="skeleton" style="height: 320px"></div>
+  } @else {
+    <form class="layout" (ngSubmit)="save()" novalidate>
+      <section class="card basics enter enter-1">
+        <div class="field name-field">
+          <label for="w-name">Nome do treino</label>
+          <input id="w-name" class="input" [class.invalid]="nameError()" maxlength="80" autocomplete="off"
+                 placeholder="Ex.: Peito e tríceps" [ngModel]="name()" (ngModelChange)="name.set($event)" name="name"
+                 [attr.aria-invalid]="!!nameError()" aria-describedby="w-name-err" />
+          @if (nameError()) { <span class="error" id="w-name-err">{{ nameError() }}</span> }
+        </div>
+        <div class="field">
+          <span class="label" id="letter-label">Letra da divisão</span>
+          <div class="letters" role="radiogroup" aria-labelledby="letter-label">
+            @for (l of letters; track l) {
+              <button type="button" role="radio" class="letter" [class.on]="letter() === l" [attr.aria-checked]="letter() === l"
+                      (click)="letter.set(l)">{{ l || '—' }}</button>
+            }
+          </div>
+        </div>
+        <div class="field desc-field">
+          <label for="w-desc">Descrição <span class="faint">(opcional)</span></label>
+          <textarea id="w-desc" class="textarea" rows="2" maxlength="300" placeholder="Foco, observações, cadência…"
+                    [ngModel]="description()" (ngModelChange)="description.set($event)" name="description"></textarea>
+        </div>
+      </section>
+
+      <section class="section enter enter-2">
+        <div class="section-head">
+          <h2>Exercícios <span class="faint num">{{ items().length }}</span></h2>
+          <button type="button" class="btn ghost sm" (click)="pickerOpen.set(true)"><lucide-icon [img]="icons.plus" [size]="16" /> Adicionar</button>
+        </div>
+
+        @if (items().length === 0) {
+          <button type="button" class="add-empty" (click)="pickerOpen.set(true)">
+            <lucide-icon [img]="icons.plus" [size]="26" />
+            <strong>Escolha os exercícios</strong>
+            <span class="faint">Filtre pelo mapa muscular, equipamento ou nome.</span>
+          </button>
+        } @else {
+          <ol class="items" cdkDropList [cdkDropListData]="items()" (cdkDropListDropped)="drop($event)">
+            @for (it of items(); track it.key; let i = $index) {
+              <li class="item card" cdkDrag cdkDragLockAxis="y">
+                <div class="item-head">
+                  <button type="button" class="grip" cdkDragHandle aria-label="Arrastar para reordenar">
+                    <lucide-icon [img]="icons.grip" [size]="18" />
+                  </button>
+                  <span class="order num">{{ i + 1 }}</span>
+                  <div class="item-info">
+                    <a class="item-name" [routerLink]="['/exercicios', it.exercise.id]">{{ it.exercise.name }}</a>
+                    <span class="faint">{{ muscleLabel[it.exercise.primaryMuscle.slug] }} · {{ eqLabel[it.exercise.equipment] }}</span>
+                  </div>
+                  <button type="button" class="icon-btn" (click)="remove(it.key)" [attr.aria-label]="'Remover ' + it.exercise.name">
+                    <lucide-icon [img]="icons.trash" [size]="18" />
+                  </button>
+                </div>
+
+                <div class="params">
+                  <div class="param">
+                    <span class="p-label" [id]="'s-' + it.key">Séries</span>
+                    <div class="stepper" role="group" [attr.aria-labelledby]="'s-' + it.key">
+                      <button type="button" (click)="step(it.key, 'sets', -1)" aria-label="Menos uma série" [disabled]="it.sets <= 1"><lucide-icon [img]="icons.minus" [size]="16" /></button>
+                      <input class="num" inputmode="numeric" [value]="it.sets" (change)="setNumber(it.key, 'sets', $any($event.target).value)" aria-label="Séries" />
+                      <button type="button" (click)="step(it.key, 'sets', 1)" aria-label="Mais uma série" [disabled]="it.sets >= 10"><lucide-icon [img]="icons.plus" [size]="16" /></button>
+                    </div>
+                  </div>
+                  <div class="param">
+                    <span class="p-label" [id]="'r-' + it.key">Repetições</span>
+                    <div class="stepper" role="group" [attr.aria-labelledby]="'r-' + it.key">
+                      <button type="button" (click)="step(it.key, 'reps', -1)" aria-label="Menos uma repetição" [disabled]="it.reps <= 1"><lucide-icon [img]="icons.minus" [size]="16" /></button>
+                      <input class="num" inputmode="numeric" [value]="it.reps" (change)="setNumber(it.key, 'reps', $any($event.target).value)" aria-label="Repetições" />
+                      <button type="button" (click)="step(it.key, 'reps', 1)" aria-label="Mais uma repetição" [disabled]="it.reps >= 50"><lucide-icon [img]="icons.plus" [size]="16" /></button>
+                    </div>
+                  </div>
+                  <div class="param">
+                    <label class="p-label" [for]="'rest-' + it.key">Descanso</label>
+                    <select class="select" [id]="'rest-' + it.key" [value]="it.restSeconds" (change)="patch(it.key, { restSeconds: +$any($event.target).value })">
+                      @for (r of restOptions; track r) { <option [value]="r" [selected]="r === it.restSeconds">{{ restLabel(r) }}</option> }
+                    </select>
+                  </div>
+                </div>
+                <input class="input notes" maxlength="200" placeholder="Observação (ex.: pegada fechada, drop-set na última)"
+                       [value]="it.notes" (input)="patch(it.key, { notes: $any($event.target).value })" [attr.aria-label]="'Observação de ' + it.exercise.name" />
+              </li>
+            }
+          </ol>
+        }
+      </section>
+
+      <aside class="summary card enter enter-3" aria-label="Resumo do treino">
+        <div class="sum-stats">
+          <div class="stat"><span class="value num">{{ items().length }}</span><span class="label">exercícios</span></div>
+          <div class="stat"><span class="value num">{{ totalSets() }}</span><span class="label">séries</span></div>
+          <div class="stat"><span class="value num">~{{ estimatedMinutes() }}<small>min</small></span><span class="label">duração</span></div>
+        </div>
+        @if (muscles().length) {
+          <div class="w-tags">@for (m of muscles(); track m) { <span class="tag red">{{ m }}</span> }</div>
+        }
+        <div class="sum-actions">
+          <a routerLink="/treinos" class="btn ghost">Cancelar</a>
+          <button type="submit" class="btn primary" [disabled]="saving()">{{ saving() ? 'Salvando…' : isEdit() ? 'Salvar alterações' : 'Criar treino' }}</button>
+        </div>
+      </aside>
+    </form>
+  }
+</div>
+
+@if (pickerOpen()) {
+  <div class="picker-backdrop" (click)="pickerOpen.set(false)">
+    <div class="picker" role="dialog" aria-modal="true" aria-labelledby="picker-title" (click)="$event.stopPropagation()">
+      <header class="picker-head">
+        <div>
+          <h2 id="picker-title">Adicionar exercícios</h2>
+          <span class="faint">{{ items().length }} selecionado{{ items().length === 1 ? '' : 's' }}</span>
+        </div>
+        <button type="button" class="icon-btn" (click)="pickerOpen.set(false)" aria-label="Fechar"><lucide-icon [img]="icons.x" [size]="22" /></button>
+      </header>
+      <div class="picker-body">
+        <app-exercise-browser [selectable]="true" [selectedIds]="selectedIds()" (toggled)="toggle($event)" />
+      </div>
+      <footer class="picker-foot">
+        <button type="button" class="btn primary block" (click)="pickerOpen.set(false)">Concluir</button>
+      </footer>
+    </div>
+  </div>
+}

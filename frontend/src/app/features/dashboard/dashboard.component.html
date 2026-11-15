@@ -1,0 +1,119 @@
+<div class="page">
+  <header class="hello enter">
+    <span class="eyebrow">{{ greeting }}</span>
+    <h1>{{ firstName() || 'Atleta' }}<span class="dot">.</span></h1>
+  </header>
+
+  @if (loading()) {
+    <div class="skeleton" style="height: 220px"></div>
+    <div class="skeleton" style="height: 120px"></div>
+  } @else if (data(); as d) {
+    <!-- Proximo treino: bloco principal -->
+    <section class="next card enter enter-1" aria-labelledby="next-title">
+      @if (active(); as s) {
+        <span class="eyebrow accent">Treino em andamento</span>
+        <h2 id="next-title" class="next-name">{{ s.workoutName }}</h2>
+        <p class="muted">Seu progresso está salvo. Continue de onde parou.</p>
+        <button class="btn primary lg" type="button" (click)="startNext()">
+          <lucide-icon [img]="icons.play" [size]="20" /> Continuar treino
+        </button>
+      } @else if (d.nextWorkout; as n) {
+        <div class="next-top">
+          <span class="eyebrow">Próximo treino</span>
+          @if (n.letter) { <span class="letter-badge">{{ n.letter }}</span> }
+        </div>
+        <h2 id="next-title" class="next-name">{{ n.name }}</h2>
+        <div class="next-meta">
+          <span><lucide-icon [img]="icons.dumbbell" [size]="16" /> {{ n.exerciseCount }} exercícios</span>
+          <span><lucide-icon [img]="icons.clock" [size]="16" /> ~{{ n.estimatedMinutes }} min</span>
+        </div>
+        <div class="muscles">
+          @for (m of n.muscleGroups; track m) { <span class="tag">{{ m }}</span> }
+        </div>
+        <button class="btn primary lg" type="button" (click)="startNext()" [disabled]="starting()">
+          <lucide-icon [img]="icons.play" [size]="20" /> {{ starting() ? 'Preparando…' : 'Iniciar treino' }}
+        </button>
+      } @else {
+        <span class="eyebrow">Comece por aqui</span>
+        <h2 id="next-title" class="next-name">Monte seu primeiro treino</h2>
+        <p class="muted">Escolha os músculos, selecione os exercícios e defina séries, repetições e descanso.</p>
+        <div class="next-actions">
+          <a routerLink="/treinos/novo" class="btn primary lg"><lucide-icon [img]="icons.plus" [size]="20" /> Montar treino</a>
+          <a routerLink="/treinos" class="btn ghost lg">Usar divisão pronta</a>
+        </div>
+      }
+    </section>
+
+    <!-- Semana -->
+    <section class="week card enter enter-2" aria-labelledby="week-title">
+      <div class="week-head">
+        <div>
+          <h2 id="week-title" class="eyebrow">Esta semana</h2>
+          <p class="goal"><span class="num big">{{ d.weekSessions }}</span><span class="num of">/{{ d.weeklyGoal }}</span> treinos</p>
+        </div>
+        @if (d.streakWeeks > 0) {
+          <span class="tag red streak"><lucide-icon [img]="icons.flame" [size]="14" /> {{ d.streakWeeks }} {{ d.streakWeeks === 1 ? 'semana' : 'semanas' }} na meta</span>
+        }
+      </div>
+      <div class="progress-track" role="progressbar" [attr.aria-valuenow]="d.weekSessions" [attr.aria-valuemax]="d.weeklyGoal" aria-label="Meta semanal">
+        <div class="progress-fill" [style.transform]="'scaleX(' + goalRatio() + ')'"></div>
+      </div>
+      <ol class="days" aria-label="Dias treinados">
+        @for (day of dayLabels; track day; let i = $index) {
+          <li [class.done]="trainedDays()[i]" [class.today]="i === todayIndex">
+            <span class="d">{{ day }}</span>
+            <span class="mark" aria-hidden="true"></span>
+            <span class="sr-only">{{ trainedDays()[i] ? 'treinou' : 'não treinou' }}</span>
+          </li>
+        }
+      </ol>
+      <div class="stats">
+        <div class="stat"><span class="value">{{ fmt.duration(d.weekDurationSeconds) }}</span><span class="label">Tempo treinando</span></div>
+        <div class="stat"><span class="value">{{ fmt.volume(d.weekVolume) }}</span><span class="label">Volume levantado</span></div>
+        <div class="stat"><span class="value">{{ d.weekSets }}</span><span class="label">Séries concluídas</span></div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card chart-card enter enter-3" aria-labelledby="vol-title">
+        <div class="section-head">
+          <h2 id="vol-title" class="eyebrow">Volume diário (kg)</h2>
+          <a routerLink="/evolucao" class="link-more">Evolução <lucide-icon [img]="icons.chevron" [size]="14" /></a>
+        </div>
+        <app-chart type="bar" [labels]="dayLabels" [data]="weekVolumes()" unit="kg" [highlight]="todayIndex" [height]="170"
+                   ariaLabel="Volume levantado por dia nesta semana" />
+      </section>
+
+      <section class="card last enter enter-4" aria-labelledby="last-title">
+        <div class="section-head">
+          <h2 id="last-title" class="eyebrow">Último treino</h2>
+          <a routerLink="/historico" class="link-more">Histórico <lucide-icon [img]="icons.chevron" [size]="14" /></a>
+        </div>
+        @if (d.lastSession; as l) {
+          <a [routerLink]="['/historico', l.id]" class="last-link">
+            <span class="faint">{{ fmt.relativeDay(l.finishedAt) }}</span>
+            <h3>{{ l.workoutName }}</h3>
+            <div class="last-stats">
+              <span><span class="num">{{ fmt.duration(l.durationSeconds) }}</span></span>
+              <span><span class="num">{{ fmt.volume(l.totalVolume) }}</span></span>
+              <span><span class="num">{{ l.completedSets }}</span> séries</span>
+            </div>
+            <p class="ex-names">{{ l.exerciseNames.join(' · ') }}</p>
+          </a>
+        } @else {
+          <p class="muted">Nenhum treino concluído ainda. O primeiro aparece aqui.</p>
+        }
+        <div class="total"><span class="num">{{ d.totalSessions }}</span> treinos no total</div>
+      </section>
+    </div>
+
+    <a routerLink="/treinos/novo" class="build enter enter-4">
+      <span class="build-icon"><lucide-icon [img]="icons.plus" [size]="20" /></span>
+      <span class="grow">
+        <span class="t">Montar novo treino</span>
+        <span class="s">Escolha músculos e exercícios da biblioteca</span>
+      </span>
+      <lucide-icon [img]="icons.chevron" [size]="18" class="faint" />
+    </a>
+  }
+</div>

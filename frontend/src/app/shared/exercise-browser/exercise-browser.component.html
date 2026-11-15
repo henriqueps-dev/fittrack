@@ -1,0 +1,93 @@
+<div class="browser">
+  <aside class="map-panel card">
+    <app-muscle-map
+      [selected]="muscle()"
+      [secondary]="hoveredSecondary()"
+      [(view)]="view"
+      (selectedChange)="selectMuscle($event)"
+    />
+    <p class="map-hint faint">Selecione um músculo no corpo para ver os exercícios.</p>
+  </aside>
+
+  <section class="results">
+    <div class="filters">
+      <div class="search">
+        <lucide-icon [img]="icons.search" [size]="18" />
+        <input class="input" type="search" placeholder="Buscar exercício" aria-label="Buscar exercício pelo nome"
+               [value]="query()" (input)="query.set($any($event.target).value)" />
+      </div>
+      <div class="filter-row">
+        <select class="select" aria-label="Filtrar por equipamento" [value]="equipment()" (change)="equipment.set($any($event.target).value)">
+          <option value="">Todos os equipamentos</option>
+          @for (eq of equipments; track eq) { <option [value]="eq">{{ eqLabel[eq] }}</option> }
+        </select>
+        <button type="button" class="chip fav-toggle" [class.on]="onlyFavorites()" (click)="onlyFavorites.set(!onlyFavorites())"
+                [attr.aria-pressed]="onlyFavorites()">
+          <lucide-icon [img]="icons.heart" [size]="15" /> Favoritos
+        </button>
+      </div>
+      <div class="chips" role="group" aria-label="Grupos musculares">
+        <button type="button" class="chip" [class.on]="!muscle()" (click)="muscle.set(null)">Todos</button>
+        @for (g of visibleGroups(); track g.slug) {
+          <button type="button" class="chip" [class.on]="muscle() === g.slug" (click)="selectMuscle(g.slug)"
+                  [attr.aria-pressed]="muscle() === g.slug">
+            {{ g.name }} <span class="count">{{ g.exerciseCount }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <p class="count-line faint" aria-live="polite">
+      @if (!loading()) { {{ filtered().length }} {{ filtered().length === 1 ? 'exercício' : 'exercícios' }} }
+    </p>
+
+    @if (loading()) {
+      <div class="grid">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) { <div class="skeleton" style="height: 112px"></div> }
+      </div>
+    } @else if (filtered().length === 0) {
+      <div class="empty">
+        <lucide-icon [img]="icons.search" [size]="28" />
+        <h3>Nada por aqui</h3>
+        <p>Nenhum exercício corresponde aos filtros. Tente outro grupo muscular ou limpe a busca.</p>
+        <button type="button" class="btn ghost sm" (click)="clearFilters()">Limpar filtros</button>
+      </div>
+    } @else {
+      <ul class="grid" role="list">
+        @for (ex of filtered(); track ex.id) {
+          <li (mouseenter)="hoveredId.set(ex.id)" (mouseleave)="hoveredId.set(null)">
+            @if (selectable()) {
+              <button type="button" class="ex-card" [class.picked]="isSelected(ex.id)" (click)="toggled.emit(ex)"
+                      [attr.aria-pressed]="isSelected(ex.id)">
+                <span class="thumb"><app-exercise-animation [movement]="ex.movement" [equipment]="ex.equipment"
+                      [muscle]="ex.primaryMuscle.slug" [playing]="hoveredId() === ex.id" [label]="ex.name" [fit]="true" /></span>
+                <span class="info">
+                  <span class="name">{{ ex.name }}</span>
+                  <span class="meta">{{ ex.primaryMuscle.name }} · {{ eqLabel[ex.equipment] }}</span>
+                </span>
+                <span class="add" aria-hidden="true">
+                  <lucide-icon [img]="isSelected(ex.id) ? icons.check : icons.plus" [size]="18" />
+                </span>
+                <span class="sr-only">{{ isSelected(ex.id) ? 'Remover do treino' : 'Adicionar ao treino' }}</span>
+              </button>
+            } @else {
+              <a class="ex-card" [routerLink]="['/exercicios', ex.id]">
+                <span class="thumb"><app-exercise-animation [movement]="ex.movement" [equipment]="ex.equipment"
+                      [muscle]="ex.primaryMuscle.slug" [playing]="hoveredId() === ex.id" [label]="ex.name" [fit]="true" /></span>
+                <span class="info">
+                  <span class="name">{{ ex.name }}</span>
+                  <span class="meta">{{ ex.primaryMuscle.name }} · {{ eqLabel[ex.equipment] }}</span>
+                  <span class="tag" [class.red]="ex.difficulty === 'ADVANCED'">{{ diffLabel[ex.difficulty] }}</span>
+                </span>
+              </a>
+              <button type="button" class="icon-btn fav" [class.active]="ex.favorite" (click)="toggleFavorite(ex, $event)"
+                      [attr.aria-label]="(ex.favorite ? 'Remover dos favoritos: ' : 'Adicionar aos favoritos: ') + ex.name" [attr.aria-pressed]="ex.favorite">
+                <lucide-icon [img]="icons.heart" [size]="18" [class.filled]="ex.favorite" />
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</div>

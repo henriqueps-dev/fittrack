@@ -1,0 +1,113 @@
+<div class="page">
+  <div class="topbar">
+    <button type="button" class="icon-btn boxed" (click)="location.back()" aria-label="Voltar">
+      <lucide-icon [img]="icons.back" [size]="20" />
+    </button>
+    @if (exercise(); as ex) {
+      <button type="button" class="icon-btn boxed fav" [class.active]="ex.favorite" (click)="toggleFavorite()"
+              [attr.aria-label]="ex.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'" [attr.aria-pressed]="ex.favorite">
+        <lucide-icon [img]="icons.heart" [size]="20" [class.filled]="ex.favorite" />
+      </button>
+    }
+  </div>
+
+  @if (exercise(); as ex) {
+    <div class="layout">
+      <section class="stage card enter">
+        <app-exercise-animation [movement]="ex.movement" [equipment]="ex.equipment" [muscle]="ex.primaryMuscle.slug"
+                                [secondary]="secondary()" [playing]="playing()" [orbit]="true" [label]="'Demonstração: ' + ex.name" />
+        <span class="orbit-hint">Arraste para girar · toque duplo para centralizar</span>
+        <button type="button" class="icon-btn play" (click)="playing.set(!playing())" [attr.aria-label]="playing() ? 'Pausar animação' : 'Reproduzir animação'">
+          <lucide-icon [img]="playing() ? icons.pause : icons.play" [size]="18" />
+        </button>
+      </section>
+
+      <section class="info enter enter-1">
+        <div class="titles">
+          <span class="eyebrow accent">{{ ex.primaryMuscle.name }}</span>
+          <h1>{{ ex.name }}</h1>
+        </div>
+        <div class="tags">
+          <span class="tag">{{ eqLabel[ex.equipment] }}</span>
+          <span class="tag" [class.red]="ex.difficulty === 'ADVANCED'">{{ diffLabel[ex.difficulty] }}</span>
+          @for (m of ex.secondaryMuscles; track m.slug) { <span class="tag">+ {{ m.name }}</span> }
+        </div>
+        <p class="desc">{{ ex.description }}</p>
+        <div class="actions">
+          <button type="button" class="btn primary" (click)="openAddSheet()"><lucide-icon [img]="icons.plus" [size]="18" /> Adicionar a um treino</button>
+        </div>
+      </section>
+
+      <section class="card how enter enter-2" aria-labelledby="how-title">
+        <h2 id="how-title" class="eyebrow">Como executar</h2>
+        <ol class="steps">
+          @for (step of ex.instructions; track $index) {
+            <li><span class="n num">{{ $index + 1 }}</span><span>{{ step }}</span></li>
+          }
+        </ol>
+      </section>
+
+      <section class="card muscles enter enter-2" aria-labelledby="mus-title">
+        <h2 id="mus-title" class="eyebrow">Músculos trabalhados</h2>
+        <app-muscle-map [selected]="ex.primaryMuscle.slug" [secondary]="secondary()" [interactive]="false" [both]="true"
+                        [showToggle]="false" [showLabel]="false" />
+        <div class="legend">
+          <span><i class="sw primary"></i> Principal</span>
+          <span><i class="sw secondary"></i> Secundários</span>
+        </div>
+      </section>
+
+      <section class="card history enter enter-3" aria-labelledby="hist-title">
+        <div class="section-head">
+          <h2 id="hist-title" class="eyebrow">Seu histórico</h2>
+          @if (progress()?.points?.length) { <a routerLink="/evolucao" [queryParams]="{ exercicio: ex.id }" class="faint more">Ver evolução</a> }
+        </div>
+        @if (progress(); as p) {
+          @if (p.points.length) {
+            <div class="hist-stats">
+              <div class="stat"><span class="value">{{ fmt.kg(p.bestWeight) }}</span><span class="label">Maior carga</span></div>
+              <div class="stat"><span class="value">{{ fmt.kg(p.bestEstimated1Rm) }}</span><span class="label">1RM estimado</span></div>
+              @if (last(); as l) {
+                <div class="stat"><span class="value">{{ fmt.kg(l.maxWeight) }}</span><span class="label">Última vez · {{ fmt.shortDate(l.date) }}</span></div>
+              }
+            </div>
+            @if (p.points.length > 1) {
+              <app-chart type="line" [labels]="chartLabels()" [data]="chartData()" unit="kg" [height]="160" [decimals]="1"
+                         ariaLabel="Evolução da carga máxima neste exercício" />
+            }
+          } @else {
+            <p class="muted">Você ainda não registrou este exercício. As cargas aparecem aqui depois do primeiro treino.</p>
+          }
+        } @else {
+          <div class="skeleton" style="height: 80px"></div>
+        }
+      </section>
+    </div>
+  } @else {
+    <div class="skeleton" style="height: 320px"></div>
+  }
+</div>
+
+@if (sheetOpen()) {
+  <div class="sheet-backdrop" (click)="sheetOpen.set(false)" (keydown.escape)="sheetOpen.set(false)">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="add-title" (click)="$event.stopPropagation()">
+      <h2 id="add-title">Adicionar a um treino</h2>
+      @if (workouts().length) {
+        <div class="list card flush">
+          @for (w of workouts(); track w.id) {
+            <button type="button" class="row" (click)="addTo(w)" [disabled]="adding() !== null">
+              @if (w.letter) { <span class="letter-badge">{{ w.letter }}</span> } @else { <span class="letter-badge"><lucide-icon [img]="icons.list" [size]="18" /></span> }
+              <span class="grow"><span class="title">{{ w.name }}</span><span class="sub">{{ w.exercises.length }} exercícios</span></span>
+              <lucide-icon [img]="icons.plus" [size]="18" class="faint" />
+            </button>
+          }
+        </div>
+        <p class="faint small">Entra com 3 séries de 10 repetições e 90 s de descanso. Você pode ajustar depois.</p>
+      } @else {
+        <p class="muted">Você ainda não tem treinos. Monte o primeiro e adicione este exercício.</p>
+        <a routerLink="/treinos/novo" class="btn primary block">Montar treino</a>
+      }
+      <button type="button" class="btn ghost block" (click)="sheetOpen.set(false)">Fechar</button>
+    </div>
+  </div>
+}

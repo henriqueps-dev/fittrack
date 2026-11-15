@@ -1,0 +1,28 @@
+# Segredos e credenciais locais
+.env
+.env.*
+!.env.example
+.dev-account
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/out-tsc/
+frontend/coverage/
+
+# Backend
+backend/target/
+backend/src/main/resources/static/*
+!backend/src/main/resources/static/.gitkeep
+*.class
+hs_err_pid*
+
+# IDE / sistema
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+*.log
